@@ -761,7 +761,7 @@ Distributed under the **MIT License**. See [`LICENSE`](./LICENSE) for more infor
 
 <div align="center">
 
-**Built with ❤️ and a lot of ☕ by the Nexfolio team**
+**Built with ❤️ and a lot of ☕ by the Nexfolio team and any suggestion will be appreaciated**
 
 <br/>
 

@@ -1,12 +1,24 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-const useAppStore = create((set) => ({
-  user:      null,
-  portfolio: null,
-  theme:     'dark',
-  setUser:      (user)      => set({ user }),
-  setPortfolio: (portfolio) => set({ portfolio }),
-  setTheme:     (theme)     => set({ theme }),
-}))
+export const useAppStore = create(
+  persist(
+    (set) => ({
+      authModal: false,
+      authMode: 'signup',
+      openAuth:  (mode = 'signup') => set({ authModal: true, authMode: mode }),
+      closeAuth: () => set({ authModal: false }),
+      toggleAuthMode: () => set((s) => ({ authMode: s.authMode === 'signup' ? 'login' : 'signup' })),
 
-export default useAppStore
+      activeTab: 'overview',
+      setTab: (tab) => set({ activeTab: tab }),
+
+      resumeData: {
+        name:'', title:'', email:'', phone:'', location:'', bio:'',
+        skills:[], experience:[], education:[], projects:[],
+      },
+      setResume: (d) => set((s) => ({ resumeData: { ...s.resumeData, ...d } })),
+    }),
+    { name: 'nexfolio', partialize: (s) => ({ resumeData: s.resumeData, activeTab: s.activeTab }) }
+  )
+)

@@ -1,13 +1,19 @@
-import clsx from 'clsx'
+import { clsx } from 'clsx'
 
-export default function Badge({ children, color = 'indigo', className }) {
+const variants = {
+  cyan:   'bg-cyan/10 border-cyan/30 text-cyan',
+  violet: 'bg-violet/10 border-violet/30 text-violet',
+  pink:   'bg-pink-400/10 border-pink-400/30 text-pink-400',
+  green:  'bg-emerald-400/10 border-emerald-400/30 text-emerald-400',
+  muted:  'bg-white/5 border-white/10 text-slate-400',
+}
+
+export default function Badge({ children, variant = 'cyan', className = '' }) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold',
-        color === 'indigo' && 'bg-indigo-500/20 text-indigo-300',
-        color === 'green'  && 'bg-emerald-500/20 text-emerald-300',
-        color === 'amber'  && 'bg-amber-500/20 text-amber-300',
+        'inline-block border rounded-full px-3 py-1 text-xs font-medium font-mono tracking-wide',
+        variants[variant],
         className
       )}
     >

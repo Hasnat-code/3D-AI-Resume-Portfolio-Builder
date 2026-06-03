@@ -2,8 +2,9 @@
  * Calls Claude / Gemini / OpenAI using the API key the user stored in their profile.
  * Nothing is hardcoded. Key is saved in Supabase profiles.ai_key column.
  */
-
+const DEFAULT_GROK_KEY = import.meta.env.VITE_GROK_KEY || ''
 export async function callAI({ provider = 'claude', apiKey, prompt, maxTokens = 800 }) {
+  apiKey = apiKey || DEFAULT_GROK_KEY;
   if (!apiKey) throw new Error('No API key provided. Add your key in Settings.')
 
   if (provider === 'claude') {

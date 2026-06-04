@@ -246,15 +246,20 @@ function AIStudio({ profile }) {
   ]
 
   const run = async () => {
-    if (!profile?.ai_key) { setError('Add your AI key in Settings first.'); return }
     if (!input.trim()) { setError('Enter some text first.'); return }
+    const provider = profile?.ai_provider || 'grok'
+    // Only block if not grok AND no key provided
+    if (provider !== 'grok' && !profile?.ai_key?.trim()) {
+      setError(`Add your ${provider} key in Settings first.`)
+      return
+    }
     setError(''); setBusy(true); setOutput('')
     try {
       const t = types.find(x=>x.id===activeType)
       const { callAI } = await import('../lib/ai.js')
       const result = await callAI({
-        provider: profile.ai_provider || 'claude',
-        apiKey: profile.ai_key,
+        provider,
+        apiKey: profile?.ai_key || '',
         prompt: t.prompt(input, jd),
       })
       setOutput(result)
@@ -265,9 +270,12 @@ function AIStudio({ profile }) {
   return (
     <div style={{padding:32}}>
       <h2 style={{fontFamily:'Work Sans',fontWeight:800,fontSize:22,marginBottom:6}}>AI Studio</h2>
-      <p style={{color:'#64748b',fontSize:14,marginBottom:24}}>Powered by your own API key • Claude / OpenAI / Gemini</p>
+      <p style={{color:'#64748b',fontSize:14,marginBottom:24}}>
+        Grok built-in active by default • Switch provider in{' '}
+        <span style={{color:'#00f5ff',cursor:'pointer'}} onClick={()=>{}}>Settings</span>
+      </p>
 
-      {!profile?.ai_key && (
+      {(!profile?.ai_key && (profile?.ai_provider || 'grok') !== 'grok') && (
         <div style={{background:'rgba(251,191,36,0.06)',border:'1px solid rgba(251,191,36,0.25)',borderRadius:12,padding:'14px 18px',marginBottom:20,fontSize:14,color:'#fbbf24'}}>
           ⚠️ No API key found. Go to <strong>Settings</strong> to add your key.
         </div>
@@ -306,7 +314,7 @@ function AIStudio({ profile }) {
         <div>
           <label style={{fontSize:12,color:'#64748b',fontWeight:600,letterSpacing:1,textTransform:'uppercase',display:'block',marginBottom:8}}>AI Output</label>
           <div style={{background:'rgba(0,0,0,0.5)',border:'1px solid rgba(0,245,255,0.1)',borderRadius:12,padding:20,minHeight:240,fontFamily:'Work Sans',fontSize:14,color:'#94a3b8',lineHeight:1.7,position:'relative',whiteSpace:'pre-wrap'}}>
-            {busy && <div style={{color:'#00f5ff',fontFamily:'Work Sans',fontSize:13}}>✦ Generating with AI…<br/><br/><span style={{color:'#475569'}}>Using your {profile?.ai_provider||'claude'} key</span></div>}
+            {busy && <div style={{color:'#00f5ff',fontFamily:'Work Sans',fontSize:13}}>✦ Generating with AI…<br/><br/><span style={{color:'#475569'}}>Using {profile?.ai_provider==='grok'||!profile?.ai_provider ? 'Grok (built-in)' : profile?.ai_provider}</span></div>}
             {!busy && !output && <span style={{color:'#334155'}}>AI output will appear here…</span>}
             {!busy && output && (
               <>
@@ -323,7 +331,7 @@ function AIStudio({ profile }) {
 
 // ── Settings Tab ──────────────────────────────────────────────────────────
 function SettingsPanel({ profile, updateProfile }) {
-  const [form, setForm] = useState({ name: profile?.name||'', title: profile?.title||'', bio: profile?.bio||'', ai_provider: profile?.ai_provider||'claude', ai_key: profile?.ai_key||'' })
+  const [form, setForm] = useState({ name: profile?.name||'', title: profile?.title||'', bio: profile?.bio||'', ai_provider: profile?.ai_provider||'grok', ai_key: profile?.ai_key||'' })
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [show, setShow] = useState(false)
@@ -360,14 +368,15 @@ function SettingsPanel({ profile, updateProfile }) {
         <div>
           <label style={{fontSize:12,color:'#64748b',fontWeight:600,letterSpacing:1,textTransform:'uppercase',display:'block',marginBottom:7}}>AI Provider</label>
           <select className="input-field" value={form.ai_provider} onChange={e=>setForm(f=>({...f,ai_provider:e.target.value}))} style={{cursor:'pointer'}}>
-            <option value="claude">Claude (Anthropic) — Recommended</option>
-            <option value="openai">GPT-4o (OpenAI)</option>
-            <option value="gemini">Gemini 1.5 Pro (Google)</option>
+            <option value="grok">⚡ Grok 2 (xAI) — Built-in Default</option>
+            <option value="claude">Claude (Anthropic) — needs your key</option>
+            <option value="openai">GPT-4o (OpenAI) — needs your key</option>
+            <option value="gemini">Gemini 1.5 Pro (Google) — needs your key</option>
           </select>
         </div>
         <div>
           <label style={{fontSize:12,color:'#64748b',fontWeight:600,letterSpacing:1,textTransform:'uppercase',display:'block',marginBottom:7}}>
-            API Key {form.ai_provider==='claude'?'(sk-ant-…)':form.ai_provider==='openai'?'(sk-…)':'(AIza…)'}
+            {form.ai_provider==='grok' ? 'Your Own Grok Key (optional — overrides built-in)' : `API Key ${form.ai_provider==='claude'?'(sk-ant-…)':form.ai_provider==='openai'?'(sk-…)':'(AIza…)'}`}
           </label>
           <div style={{position:'relative'}}>
             <input className="input-field" type={show?'text':'password'} placeholder={form.ai_provider==='claude'?'sk-ant-api03-...':form.ai_provider==='openai'?'sk-proj-...':'AIza...'} value={form.ai_key} onChange={e=>setForm(f=>({...f,ai_key:e.target.value}))} style={{paddingRight:60}} />
@@ -376,10 +385,11 @@ function SettingsPanel({ profile, updateProfile }) {
             </button>
           </div>
           <p style={{fontSize:12,color:'#475569',marginTop:6}}>
-            {form.ai_provider==='claude' && <>Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>console.anthropic.com</a></>}
-            {form.ai_provider==='openai' && <>Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>platform.openai.com</a></>}
-            {form.ai_provider==='gemini' && <>Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>aistudio.google.com</a></>}
-          </p>
+              {form.ai_provider==='grok'    && <>Built-in key active. Optionally use your own from <a href="https://x.ai/api" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>x.ai/api</a></>}
+              {form.ai_provider==='claude'  && <>Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>console.anthropic.com</a></>}
+              {form.ai_provider==='openai'  && <>Get your key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>platform.openai.com</a></>}
+              {form.ai_provider==='gemini'  && <>Get your key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{color:'#00f5ff'}}>aistudio.google.com</a></>}
+            </p>
         </div>
 
         <button className="btn-primary" type="submit" disabled={busy} style={{alignSelf:'flex-start',padding:'13px 32px'}}>
